@@ -1,0 +1,19 @@
+{
+  "name": "cryptodesk-news-monitor",
+  "version": "1.0.0",
+  "description": "CryptoDesk News Monitor browser aggregation terminal.",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1"
+  },
+  "keywords": [
+    "crypto",
+    "rss",
+    "monitor",
+    "terminal"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoDesk News Monitor — Terminal</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header" role="banner">
+    <div class="logo-section">
+      <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Sidebar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="logo-icon" aria-hidden="true">CD</div>
+      <h1 class="app-title">Crypto<span>Desk</span></h1>
+    </div>
+    
+    <div class="header-actions">
+      <div class="refresh-info">
+        <span id="lastRefreshText">Last sync: Never</span>
+      </div>
+      <button class="btn btn-primary" id="refreshBtn" aria-label="Refresh RSS feeds">
+        <svg class="refresh-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
+      <a href="admin.html" class="btn btn-outline" aria-label="Open settings and configurations">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Admin</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="app-container">
+    
+    <!-- Left Navigation Sidebar -->
+    <aside class="app-sidebar" id="appSidebar" role="complementary">
+      
+      <!-- Primary Filters -->
+      <nav class="sidebar-section" aria-label="Article Filters">
+        <h3>Filters</h3>
+        <ul class="sidebar-list">
+          <li class="sidebar-item active" data-filter="all" tabindex="0">
+            <span class="sidebar-item-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+              All Articles
+            </span>
+            <span class="sidebar-item-badge" id="countAll">0</span>
+          </li>
+          <li class="sidebar-item" data-filter="unread" tabindex="0">
+            <span class="sidebar-item-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+              Unread
+            </span>
+            <span class="sidebar-item-badge" id="countUnread">0</span>
+          </li>
+          <li class="sidebar-item" data-filter="read" tabindex="0">
+            <span class="sidebar-item-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
+              Read
+            </span>
+            <span class="sidebar-item-badge" id="countRead">0</span>
+          </li>
+          <li class="sidebar-item" data-filter="alerts" tabindex="0">
+            <span class="sidebar-item-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              Alerts
+            </span>
+            <span class="sidebar-item-badge" id="countAlerts">0</span>
+          </li>
+          <li class="sidebar-item" data-filter="new24h" tabindex="0">
+            <span class="sidebar-item-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              New (24h)
+            </span>
+            <span class="sidebar-item-badge" id="countNew24h">0</span>
+          </li>
+        </ul>
+      </nav>
+      
+      <!-- Topics Navigation -->
+      <nav class="sidebar-section" aria-label="Article Topics">
+        <h3>Topics</h3>
+        <ul class="sidebar-list" id="sidebarTopicsList">
+          <!-- Populated Dynamically -->
+        </ul>
+      </nav>
+      
+      <!-- Feed Sources Navigation -->
+      <nav class="sidebar-section" aria-label="Feed Sources">
+        <h3>Sources</h3>
+        <ul class="sidebar-list" id="sidebarSourcesList">
+          <!-- Populated Dynamically -->
+        </ul>
+      </nav>
+      
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="app-main" role="main">
+      
+      <!-- Metric Cards Grid (8 Cards for Source-Based Analytics) -->
+      <section class="stats-grid" aria-label="Dashboard Metrics">
+        <div class="stat-card stat-total">
+          <div class="stat-icon" aria-hidden="true">📊</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotalArticles">0</span>
+            <span class="stat-label">Total Articles</span>
+          </div>
+        </div>
+        <div class="stat-card stat-alerts">
+          <div class="stat-icon" aria-hidden="true">🚨</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotalAlerts">0</span>
+            <span class="stat-label">Total Alerts</span>
+          </div>
+        </div>
+        <div class="stat-card stat-total-sources">
+          <div class="stat-icon" aria-hidden="true">📰</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statTotalSources">0</span>
+            <span class="stat-label">Total Sources</span>
+          </div>
+        </div>
+        <div class="stat-card stat-active-sources">
+          <div class="stat-icon" aria-hidden="true">🟢</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statActiveSources">0</span>
+            <span class="stat-label">Active Feeds</span>
+          </div>
+        </div>
+        <!-- <div class="stat-card stat-failed-sources">
+          <div class="stat-icon" aria-hidden="true">🔴</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statFailedSources">0</span>
+            <span class="stat-label">Failed Feeds</span>
+          </div>
+        </div>
+        <div class="stat-card stat-most-reliable">
+          <div class="stat-icon" aria-hidden="true">🏆</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statMostReliable">N/A</span>
+            <span class="stat-label">Most Reliable</span>
+          </div>
+        </div> -->
+        <!-- <div class="stat-card stat-least-reliable">
+          <div class="stat-icon" aria-hidden="true">⚠️</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statLeastReliable">N/A</span>
+            <span class="stat-label">Least Reliable</span>
+          </div>
+        </div>
+        <div class="stat-card stat-avg-response">
+          <div class="stat-icon" aria-hidden="true">⚡</div>
+          <div class="stat-details">
+            <span class="stat-value" id="statAvgResponse">0ms</span>
+            <span class="stat-label">Avg Response</span>
+          </div>
+        </div> -->
+      </section>
+
+      <!-- Dashboard View Navigation Sub-Tabs -->
+      <div class="dashboard-tabs" role="tablist">
+        <button class="dash-tab active" id="btnDashFeed" role="tab" aria-selected="true" aria-controls="viewFeedContent">Live Articles</button>
+        <button class="dash-tab" id="btnDashSources" role="tab" aria-selected="false" aria-controls="viewSourcesContent">Source Monitor</button>
+      </div>
+
+      <!-- VIEW PANEL 1: LIVE ARTICLES FEED -->
+      <div class="view-panel active" id="viewFeedContent">
+        <!-- Dashboard Controls Toolbar -->
+        <section class="toolbar" aria-label="Controls Toolbar" style="margin-bottom: 16px;">
+          <div class="search-wrapper">
+            <span class="search-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input type="search" class="search-input" id="searchInput" placeholder="Search headlines or description..." aria-label="Search articles">
+          </div>
+          
+          <div class="toolbar-controls">
+            <!-- Feed Status filter -->
+            <select class="select-dropdown" id="statusFilter" aria-label="Filter by source status">
+              <option value="all">All Statuses</option>
+              <option value="LIVE">LIVE Feeds Only</option>
+              <option value="CORS_BLOCKED">CORS Blocked Only</option>
+              <option value="TIMEOUT">Timeouts Only</option>
+              <option value="PARSE_ERROR">Parse Errors Only</option>
+              <option value="RATE_LIMITED">Rate Limited Only</option>
+              <option value="ERROR">Any Error Feeds</option>
+            </select>
+
+            <!-- Reliability Filter -->
+            <select class="select-dropdown" id="reliabilityFilter" aria-label="Filter by source reliability">
+              <option value="all">All Reliabilities</option>
+              <option value="high">High (>90%)</option>
+              <option value="low">Low (<90%)</option>
+            </select>
+
+            <!-- Alert Tier Filter -->
+            <select class="select-dropdown" id="alertTierFilter" aria-label="Filter by alert tier">
+              <option value="all">All Tiers</option>
+              <option value="HIGH">HIGH alerts</option>
+              <option value="LOW">LOW alerts</option>
+              <option value="INFO">INFO alerts</option>
+            </select>
+
+            <!-- Sort option -->
+            <select class="select-dropdown" id="sortSelect" aria-label="Sort articles by">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="alerts">Alerts First</option>
+              <option value="source">Source A-Z</option>
+            </select>
+            
+            <div class="view-toggles" role="group" aria-label="Layout toggle">
+              <button class="view-btn active" id="viewGridBtn" aria-label="Grid view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </button>
+              <button class="view-btn" id="viewListBtn" aria-label="List view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Articles Listing View -->
+        <section class="feed-content" id="feedScrollContainer" aria-label="Feed Articles" style="height: calc(100vh - 350px); overflow-y: auto;">
+          <div class="articles-grid" id="articlesContainer">
+            <!-- Article cards rendered dynamically -->
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW PANEL 2: SOURCE MONITOR DASHBOARD -->
+      <div class="view-panel" id="viewSourcesContent">
+        <section class="sources-monitor-grid" id="sourcesMonitorContainer" aria-label="Sources Health Metrics">
+          <!-- Source Cards rendered dynamically -->
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/alerts.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/rss.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoDesk Admin Panel</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="admin-header" role="banner">
+    <div class="logo-section">
+      <div class="logo-icon" aria-hidden="true">CD</div>
+      <h1 class="admin-title">CryptoDesk <span>Control Panel</span></h1>
+    </div>
+    <div>
+      <a href="index.html" class="btn btn-outline" aria-label="Go back to Dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Terminal
+      </a>
+    </div>
+  </header>
+
+  <!-- Control Panel Content -->
+  <main class="admin-container" role="main">
+    
+    <!-- Tabbed navigation bar -->
+    <nav class="admin-tabs" role="tablist" aria-label="Management Sections">
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tabSources" id="btnTabSources">Sources</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tabKeywords" id="btnTabKeywords">Alert Keywords</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tabTopics" id="btnTabTopics">Topics</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tabSettings" id="btnTabSettings">System Settings</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tabImportExport" id="btnTabImportExport">Import / Export</button>
+    </nav>
+
+    <!-- TAB: SOURCES -->
+    <section class="tab-content active" id="tabSources" role="tabpanel" aria-labelledby="btnTabSources">
+      
+      <!-- Ingestion Status Panel -->
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Feed Statuses</h2>
+            <p class="card-description">CORS connectivity and sync states of active feeds.</p>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Feed Source</th>
+                <th>Status</th>
+                <th>Success Rate</th>
+                <th>Last Checked</th>
+              </tr>
+            </thead>
+            <tbody id="feedStatusTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Default Sources Library (Enhancement) -->
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Default Sources Library</h2>
+            <p class="card-description">Enable or disable standard crypto news providers with a single click.</p>
+          </div>
+        </div>
+        <!-- Container for Library Cards -->
+        <div class="library-grid" id="sourcesLibraryContainer">
+          <!-- Populated dynamically via admin.js -->
+        </div>
+      </div>
+
+      <!-- Add / Edit Feed -->
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="feedFormTitle">Add RSS Feed Source</h2>
+            <p class="card-description">Add new XML RSS or Atom feeds for automatic background scanning.</p>
+          </div>
+        </div>
+        
+        <form id="feedForm" class="form-grid">
+          <input type="hidden" id="feedFormIndex" value="-1">
+          <div class="form-group">
+            <label class="form-label" for="feedFormName">Source Name</label>
+            <input type="text" id="feedFormName" class="form-input" placeholder="e.g. CoinDesk" required>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="feedFormUrl">RSS XML Feed URL</label>
+            <input type="url" id="feedFormUrl" class="form-input" placeholder="e.g. https://www.coindesk.com/arc/outboundfeeds/rss/" required>
+          </div>
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 10px;">
+            <input type="checkbox" id="feedFormActive" checked>
+            <label class="form-label" for="feedFormActive">Active Source</label>
+          </div>
+          <div class="form-group full-width btn-group" style="flex-direction: row; gap: 10px;">
+            <button type="submit" class="btn btn-primary" id="btnSaveFeed">Save Feed</button>
+            <button type="button" class="btn btn-outline" id="btnTestFeed">Test Feed Connection</button>
+            <button type="button" class="btn btn-outline" id="btnCancelFeedEdit" style="display: none;">Cancel</button>
+          </div>
+        </form>
+        
+        <!-- Live Connection Testing Console -->
+        <div style="display: none;" id="feedTestConsoleWrapper">
+          <h3 class="form-label" style="margin-bottom: 6px;">Test Feed Output</h3>
+          <div class="log-panel" id="feedTestConsole"></div>
+        </div>
+      </div>
+
+      <!-- Feeds List -->
+      <div class="admin-card">
+        <div class="card-header">
+          <h2 class="card-title">Manage Sources</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Source Name</th>
+                <th>XML URL</th>
+                <th>State</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="feedListTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </section>
+
+    <!-- TAB: ALERTS KEYWORDS -->
+    <section class="tab-content" id="tabKeywords" role="tabpanel" aria-labelledby="btnTabKeywords">
+      
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Add Alert Keyword</h2>
+            <p class="card-description">Configure whole-word match alerts. Case-insensitive matches trigger system notifications and custom sounds.</p>
+          </div>
+        </div>
+        <form id="keywordForm" class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="keywordFormInput">Keyword / Phrase</label>
+            <input type="text" id="keywordFormInput" class="form-input" placeholder="e.g. exploit" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="keywordFormTier">Alert Tier</label>
+            <select id="keywordFormTier" class="form-input">
+              <option value="HIGH">HIGH (Red Badge, Double Beep)</option>
+              <option value="LOW">LOW (Amber Badge, Single Beep)</option>
+              <option value="INFO">INFO (Blue Badge, Silent)</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Add Keyword</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-header">
+          <h2 class="card-title">Keyword Rules</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Alert Tier</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="keywordListTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </section>
+
+    <!-- TAB: TOPICS -->
+    <section class="tab-content" id="tabTopics" role="tabpanel" aria-labelledby="btnTabTopics">
+      
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Add / Edit Topic</h2>
+            <p class="card-description">Define custom categories. Articles matching topic keywords will be tagged and listed in the dashboard sidebar.</p>
+          </div>
+        </div>
+        <form id="topicForm" class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="topicFormName">Topic Name</label>
+            <input type="text" id="topicFormName" class="form-input" placeholder="e.g. Regulation" required>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="topicFormKeywords">Keywords (comma-separated list)</label>
+            <input type="text" id="topicFormKeywords" class="form-input" placeholder="e.g. regulation, sec, lawsuit, compliance" required>
+          </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Save Topic</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <div class="card-header">
+          <h2 class="card-title">Configured Topics</h2>
+        </div>
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Topic Name</th>
+                <th>Keywords</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="topicListTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </section>
+
+    <!-- TAB: SYSTEM SETTINGS -->
+    <section class="tab-content" id="tabSettings" role="tabpanel" aria-labelledby="btnTabSettings">
+      
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">General Settings</h2>
+            <p class="card-description">Basic system parameters for the news aggregator.</p>
+          </div>
+        </div>
+        <form id="settingsForm" class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="settingsRefresh">Refresh Interval (Minutes)</label>
+            <input type="number" id="settingsRefresh" class="form-input" min="1" max="60" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settingsMaxArticles">Maximum Retention (Articles)</label>
+            <input type="number" id="settingsMaxArticles" class="form-input" min="100" max="5000" required>
+          </div>
+
+          <!-- RSS Fetch Configuration section (Enhancement) -->
+          <div class="form-group full-width" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+            <h3 class="card-title" style="margin-bottom: 8px;">RSS Ingestion Fallback Priority</h3>
+            <p class="card-description" style="margin-bottom: 16px;">Configure cascading routing fallbacks to bypass CORS and network blocks.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingsFetchMethod">Preferred Ingestion Route</label>
+            <select id="settingsFetchMethod" class="form-input">
+              <option value="worker">1. Cloudflare Worker RSS Proxy</option>
+              <option value="custom">2. Stored Custom Proxy</option>
+              <option value="allorigins">3. AllOrigins Fallback Proxy</option>
+              <option value="direct">4. Direct Fetch (Bypass Proxies)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingsTimeout">Fetch Timeout Limit (ms)</label>
+            <input type="number" id="settingsTimeout" class="form-input" min="1000" max="60000" required>
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="settingsCloudflareWorker">Cloudflare Worker RSS Proxy URL</label>
+            <input type="url" id="settingsCloudflareWorker" class="form-input" placeholder="e.g. https://your-worker.workers.dev/rss?url=">
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="settingsCustomProxy">Custom Ingest Proxy Prefix</label>
+            <input type="text" id="settingsCustomProxy" class="form-input" placeholder="e.g. https://my-custom-proxy.com/get?url=">
+          </div>
+
+          <div class="form-group full-width" style="display: flex; flex-direction: row; gap: 24px; padding: 8px 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="settingsAllOriginsFallback">
+              <label class="form-label" for="settingsAllOriginsFallback" style="cursor: pointer;">Fallback to AllOrigins Proxy</label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="settingsDirectFallback">
+              <label class="form-label" for="settingsDirectFallback" style="cursor: pointer;">Fallback to Direct Fetch</label>
+            </div>
+          </div>
+
+          <!-- Alert toggles -->
+          <div class="form-group full-width" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 12px;">
+            <div class="switch-group">
+              <div class="switch-details">
+                <span class="switch-title">Sound Alerts</span>
+                <span class="switch-desc">Play a synthesized beep tone when high or low alerts are ingested.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="settingsSound">
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="switch-group">
+              <div class="switch-details">
+                <span class="switch-title">Desktop Notifications</span>
+                <span class="switch-desc">Display system tray notifications on new alert matches.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="settingsNotifications">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group full-width btn-group" style="flex-direction: row; gap: 12px; margin-top: 10px;">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+            <button type="button" class="btn btn-outline" id="btnResetDefaults">Reset to Initial Defaults</button>
+            <button type="button" class="btn btn-danger" id="btnClearDB">Clear Articles Database</button>
+          </div>
+        </form>
+      </div>
+      
+    </section>
+
+    <!-- TAB: IMPORT / EXPORT -->
+    <section class="tab-content" id="tabImportExport" role="tabpanel" aria-labelledby="btnTabImportExport">
+      
+      <!-- Import panel -->
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Upload Configuration File</h2>
+            <p class="card-description">Upload a previously exported config JSON to restore sources, keywords, and system settings.</p>
+          </div>
+        </div>
+        
+        <div class="file-upload-wrapper" id="uploadConfigDropzone">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px; color: var(--text-muted);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <p class="form-label" style="margin-bottom: 4px;">Drag and drop file here, or click to browse</p>
+          <p class="card-description">Accepts .json files containing feeds, alert keywords, topics and settings.</p>
+          <input type="file" id="uploadConfigInput" class="file-upload-input" accept=".json">
+        </div>
+        <div id="importErrorLog" class="card-description" style="color: var(--danger); display: none;"></div>
+      </div>
+
+      <!-- Manual JSON textbox panel -->
+      <div class="admin-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Export / Import Configuration JSON</h2>
+            <p class="card-description">Directly edit or copy the configuration JSON below to backup or update configs.</p>
+          </div>
+        </div>
+        <textarea class="json-textarea" id="jsonConfigTextarea" spellcheck="false" aria-label="JSON Configuration"></textarea>
+        <div class="btn-group" style="display: flex; gap: 12px;">
+          <button class="btn btn-primary" id="btnDownloadConfig">Download .JSON File</button>
+          <button class="btn btn-outline" id="btnImportTextareaConfig">Apply JSON Configuration</button>
+        </div>
+      </div>
+      
+    </section>
+
+  </main>
+
+  <!-- Core Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
