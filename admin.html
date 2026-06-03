@@ -250,8 +250,15 @@
         </div>
         <form id="settingsForm" class="form-grid">
           <div class="form-group">
-            <label class="form-label" for="settingsRefresh">Refresh Interval (Minutes)</label>
-            <input type="number" id="settingsRefresh" class="form-input" min="1" max="60" required>
+            <label class="form-label" for="settingsRefresh">Auto Sync Interval (Minutes)</label>
+            <select id="settingsRefresh" class="form-input" required>
+              <option value="1">1 minute</option>
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="60">60 minutes</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label" for="settingsMaxArticles">Maximum Retention (Articles)</label>

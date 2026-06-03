@@ -334,25 +334,28 @@ const RSSEngine = {
   /**
    * Cascading synchronization loop of all active sources.
    */
-  async syncAll(onProgress = null) {
-    if (this.isSyncing) return;
+  async syncAll(isManual = false) {
+    if (this.isSyncing) return false;
     this.isSyncing = true;
+    window.dispatchEvent(new CustomEvent('cryptodesk-sync-started'));
 
     const settings = SettingsManager.getSettings();
     const sources = SettingsManager.getSources().filter(s => s.active);
     
     let totalNewArticles = 0;
-    let totalAlertsCount = 0;
+    let failedAny = false;
+    const startTime = Date.now();
 
     for (const source of sources) {
-      if (onProgress) onProgress(source.id, 'Syncing...', false);
+      // Dispatch progress to UI
+      window.dispatchEvent(new CustomEvent('cryptodesk-sync-progress', { detail: { source: source.name } }));
 
-      const res = await this.syncSingle(source.id, (status) => {
-        if (onProgress) onProgress(source.id, status, false);
-      });
+      const res = await this.syncSingle(source.id);
 
       totalNewArticles += res.newCount;
-      if (onProgress) onProgress(source.id, '', true);
+      if (res.error) {
+        failedAny = true;
+      }
     }
 
     // Apply storage retention limit
@@ -360,36 +363,98 @@ const RSSEngine = {
       await enforceRetentionLimit(settings.maxArticles);
     }
 
+    const duration = Date.now() - startTime;
+    
+    // Save Sync History
+    const history = SettingsManager.getSyncHistory() || {};
+    history.lastSyncTime = startTime;
+    history.syncDuration = duration;
+    history.newArticlesAdded = totalNewArticles;
+    
+    if (!failedAny) {
+      history.lastSuccessfulSync = startTime;
+    }
+    SettingsManager.setSyncHistory(history);
+
     this.isSyncing = false;
 
     // Dispatch global completion event
     window.dispatchEvent(new CustomEvent('cryptodesk-sync-complete', {
       detail: {
-        newArticlesCount: totalNewArticles
+        newArticlesCount: totalNewArticles,
+        failedAny: failedAny,
+        isManual: isManual
       }
+    }));
+    
+    return failedAny; // Return true if any feed failed (triggers retry logic)
+  },
+
+  nextSyncCountdown: 0,
+  retryLevel: 0, // 0 = normal, 1 = 30s, 2 = 60s
+
+  /**
+   * Starts the granular 1-second interval countdown loop.
+   */
+  startAutoRefresh(immediateSync = true) {
+    this.stopAutoRefresh();
+    const settings = SettingsManager.getSettings();
+    
+    // Start initial sync if required
+    if (immediateSync) {
+      this._runScheduledSync();
+    } else {
+      this._resetCountdown();
+    }
+
+    this.intervalId = setInterval(() => {
+      if (this.isSyncing) return; // Pause countdown while syncing
+
+      this.nextSyncCountdown--;
+      
+      if (this.nextSyncCountdown <= 0) {
+        this._runScheduledSync();
+      } else {
+        // Dispatch UI tick
+        window.dispatchEvent(new CustomEvent('cryptodesk-sync-tick', { 
+          detail: { remainingSeconds: this.nextSyncCountdown } 
+        }));
+      }
+    }, 1000);
+  },
+
+  async _runScheduledSync() {
+    // UI sees Status: Syncing...
+    const hasFailures = await this.syncAll(false);
+    
+    if (hasFailures) {
+      // Retry Logic (30s -> 60s -> Normal)
+      if (this.retryLevel === 0) {
+        this.retryLevel = 1;
+        this.nextSyncCountdown = 30;
+      } else if (this.retryLevel === 1) {
+        this.retryLevel = 2;
+        this.nextSyncCountdown = 60;
+      } else {
+        this.retryLevel = 0;
+        this._resetCountdown();
+      }
+    } else {
+      this.retryLevel = 0;
+      this._resetCountdown();
+    }
+  },
+
+  _resetCountdown() {
+    const settings = SettingsManager.getSettings();
+    const intervalMins = settings.refreshInterval || 15;
+    this.nextSyncCountdown = intervalMins * 60;
+    
+    window.dispatchEvent(new CustomEvent('cryptodesk-sync-tick', { 
+      detail: { remainingSeconds: this.nextSyncCountdown } 
     }));
   },
 
-  /**
-   * Starts the automatic refresh interval loop.
-   */
-  startAutoRefresh() {
-    this.stopAutoRefresh();
-    const settings = SettingsManager.getSettings();
-    const intervalMins = settings.refreshInterval || 15;
-
-    // Initial sync
-    this.syncAll();
-
-    this.intervalId = setInterval(() => {
-      console.log('Automated sync loop executing...');
-      this.syncAll();
-    }, intervalMins * 60 * 1000);
-  },
-
-  /**
-   * Stops the automatic refresh interval loop.
-   */
   stopAutoRefresh() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -398,6 +463,6 @@ const RSSEngine = {
   },
 
   restartAutoRefresh() {
-    this.startAutoRefresh();
+    this.startAutoRefresh(true);
   }
 };

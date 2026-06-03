@@ -130,20 +130,57 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateLastSyncText() {
-    const reliability = SettingsManager.getSourceReliability();
-    let latestTime = 0;
-    Object.values(reliability).forEach((stat) => {
-      const time = stat.lastSuccessfulFetch || stat.lastFailure || 0;
-      if (time > latestTime) {
-        latestTime = time;
+    const history = SettingsManager.getSyncHistory() || {};
+    const headerLastSync = document.getElementById("headerLastSync");
+    const headerSyncStatus = document.getElementById("headerSyncStatus");
+
+    if (history.lastSuccessfulSync > 0) {
+      headerLastSync.textContent = `Last Sync: ${new Date(history.lastSuccessfulSync).toLocaleTimeString()}`;
+    } else {
+      headerLastSync.textContent = `Last Sync: Never`;
+    }
+
+    if (!RSSEngine.isSyncing) {
+      if (!navigator.onLine) {
+        headerSyncStatus.textContent = "Status: Offline";
+      } else if (history.lastSyncTime > history.lastSuccessfulSync) {
+        headerSyncStatus.textContent = "Status: Feed Errors Detected";
+      } else {
+        headerSyncStatus.textContent = "Status: Monitoring";
       }
+    }
+  }
+
+  // Handle Toast Notifications
+  const toastContainer = document.getElementById("toastContainer");
+  function showToast(count) {
+    if (count <= 0) return;
+    const toast = document.createElement("div");
+    toast.className = "sync-toast show";
+    toast.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      <span>${count} New Articles Available. Click to view.</span>
+    `;
+    
+    toast.addEventListener('click', () => {
+      // Reset to top and view newest
+      state.sortBy = "newest";
+      state.searchQuery = "";
+      state.renderedLimit = 30;
+      if (searchInput) searchInput.value = "";
+      if (sortSelect) sortSelect.value = "newest";
+      switchDashboardTab("feed");
+      
+      feedScrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
     });
 
-    if (latestTime > 0) {
-      lastRefreshText.textContent = `Last sync: ${new Date(latestTime).toLocaleTimeString()}`;
-    } else {
-      lastRefreshText.textContent = `Last sync: Never`;
-    }
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
+    }, 10000); // hide after 10s
   }
 
   // --- TAB TOGGLE TRIGGERS ---
@@ -213,37 +250,103 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Collapsible sidebar sections
+  document.querySelectorAll('.collapsible-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.classList.toggle('collapsed');
+      const targetId = header.getAttribute('data-target');
+      if (targetId) {
+        document.getElementById(targetId).classList.toggle('collapsed');
+      }
+    });
+  });
+
   // Manual Ingestion trigger
   refreshBtn.addEventListener("click", async () => {
     if (RSSEngine.isSyncing) return;
-
     refreshBtn.disabled = true;
     const svgIcon = refreshBtn.querySelector("svg");
     svgIcon.classList.add("sync-spinning");
     refreshBtn.querySelector("span").textContent = "Syncing...";
 
-    // Clear feed connections cache first, then run sync
-    await RSSEngine.syncAll((sourceId, statusText, isDone) => {
-      console.log(`Global Feed Sync [${sourceId}]: ${statusText}`);
-      if (state.currentTab === "sources") {
-        renderSourcesMonitorGrid(); // Refresh diagnostic metrics live
-      }
-    });
-
-    // Reset button states
+    await RSSEngine.syncAll(true);
+    
     svgIcon.classList.remove("sync-spinning");
     refreshBtn.disabled = false;
     refreshBtn.querySelector("span").textContent = "Refresh";
-
-    updateLastSyncText();
   });
 
   // Listener for complete RSS Sync background loop
   window.addEventListener("cryptodesk-sync-complete", async (e) => {
     console.log("Ingestion Sync cycle finished.", e.detail);
+    
+    // Transparently fetch new articles
+    const oldTopId = state.articles.length > 0 ? state.articles[0].id : null;
     state.articles = await getAllArticles();
-    refreshUI();
+    
+    // Only refresh UI entirely if it was a manual sync, or if we want to seamlessly update counts
+    // For background syncs, we update sidebar stats but preserve scroll.
+    updateStatsRow();
+    updateSidebarBadges();
+    
+    if (state.currentTab === "sources") {
+      renderSourcesMonitorGrid();
+    } else if (state.currentTab === "feed") {
+      // Re-render only if manual sync was requested, to avoid jumping
+      if (e.detail.isManual) {
+        filterAndRenderArticles();
+      }
+    }
+    
     updateLastSyncText();
+    
+    // Handle desktop notifications and toasts
+    if (e.detail.newArticlesCount > 0 && !e.detail.isManual) {
+      showToast(e.detail.newArticlesCount);
+      NotificationManager.notifyBatch(e.detail.newArticlesCount);
+    }
+  });
+
+  // Sync Progress and Timers
+  const headerNextSync = document.getElementById("headerNextSync");
+  const headerSyncStatus = document.getElementById("headerSyncStatus");
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'cryptodesk_settings') {
+      RSSEngine.restartAutoRefresh(false);
+    }
+  });
+
+  window.addEventListener("cryptodesk-sync-started", () => {
+    headerSyncStatus.textContent = "Status: Syncing...";
+    headerSyncStatus.classList.add("sync-pulse");
+  });
+
+  window.addEventListener("cryptodesk-sync-progress", (e) => {
+    headerSyncStatus.textContent = `Status: Checking ${e.detail.source}...`;
+  });
+
+  window.addEventListener("cryptodesk-sync-tick", (e) => {
+    headerSyncStatus.classList.remove("sync-pulse");
+    const seconds = e.detail.remainingSeconds;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    headerNextSync.textContent = `Next Sync: ${m}:${s}`;
+    updateLastSyncText();
+  });
+
+  // Smart Visibility Refresh
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      const history = SettingsManager.getSyncHistory() || {};
+      const now = Date.now();
+      const twoMinutes = 2 * 60 * 1000;
+      
+      if (now - (history.lastSuccessfulSync || 0) > twoMinutes) {
+        console.log("Smart visibility refresh triggered.");
+        RSSEngine.syncAll(false);
+      }
+    }
   });
 
   // Layout View preferences
@@ -449,6 +552,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderSidebarTopics() {
     const topics = SettingsManager.getTopics();
     sidebarTopicsList.innerHTML = "";
+    
+    // Force collapsed state programmatically to bypass HTML cache issues
+    sidebarTopicsList.classList.add("collapsed");
 
     const topicCounts = {};
     state.articles.forEach((art) => {
@@ -508,6 +614,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sources = SettingsManager.getSources().filter((s) => s.active);
     const reliability = SettingsManager.getSourceReliability();
     sidebarSourcesList.innerHTML = "";
+    
+    // Force collapsed state programmatically to bypass HTML cache issues
+    sidebarSourcesList.classList.add("collapsed");
 
     const sourceCounts = {};
     state.articles.forEach((art) => {

@@ -150,6 +150,15 @@ const SettingsManager = {
     if (!localStorage.getItem('cryptodesk_source_reliability')) {
       localStorage.setItem('cryptodesk_source_reliability', JSON.stringify({}));
     }
+    if (!localStorage.getItem('cryptodesk_sync_history')) {
+      localStorage.setItem('cryptodesk_sync_history', JSON.stringify({
+        lastSyncTime: 0,
+        lastSuccessfulSync: 0,
+        articlesFetched: 0,
+        newArticlesAdded: 0,
+        syncDuration: 0
+      }));
+    }
     // Backward compatibility check for newer settings
     const settings = JSON.parse(localStorage.getItem('cryptodesk_settings'));
     if (settings && !settings.preferredFetchMethod) {
@@ -200,6 +209,15 @@ const SettingsManager = {
 
   setSourceReliability(reliability) {
     localStorage.setItem('cryptodesk_source_reliability', JSON.stringify(reliability));
+  },
+
+  getSyncHistory() {
+    this.init();
+    return JSON.parse(localStorage.getItem('cryptodesk_sync_history'));
+  },
+
+  setSyncHistory(history) {
+    localStorage.setItem('cryptodesk_sync_history', JSON.stringify(history));
   },
 
   /**
@@ -260,6 +278,7 @@ const SettingsManager = {
     localStorage.removeItem('cryptodesk_alert_keywords');
     localStorage.removeItem('cryptodesk_topics');
     localStorage.removeItem('cryptodesk_source_reliability');
+    localStorage.removeItem('cryptodesk_sync_history');
     this.init();
   }
 };

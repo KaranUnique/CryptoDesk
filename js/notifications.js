@@ -125,6 +125,37 @@ const NotificationManager = {
   },
 
   /**
+   * Triggers a desktop notification for a bulk summary of new standard articles.
+   * @param {number} count 
+   */
+  notifyBatch(count) {
+    const settings = SettingsManager.getSettings();
+    if (!settings.notificationsEnabled || count <= 0) return;
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const title = 'CryptoDesk';
+      const options = {
+        body: `${count} New Articles Available`,
+        requireInteraction: false
+      };
+
+      try {
+        const notification = new Notification(title, options);
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (err) {
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, options);
+          });
+        }
+      }
+    }
+  },
+
+  /**
    * Handles batching of newly ingested alerts.
    * Sends separate desktop notifications and plays the audio alert once.
    * @param {Array<Object>} alerts 
